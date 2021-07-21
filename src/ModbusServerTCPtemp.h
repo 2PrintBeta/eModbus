@@ -213,8 +213,8 @@ template <typename ST, typename CT>
 void ModbusServerTCP<ST, CT>::serve(ModbusServerTCP<ST, CT> *myself) {
   
   {
-      // Set up server with given port
-      ST server(myself->serverPort);
+      // Set up server with given port - no backlog allowed
+      ST server(myself->serverPort,1);
 
       // Start it
       server.begin();

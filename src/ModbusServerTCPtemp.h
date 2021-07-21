@@ -87,7 +87,6 @@ ModbusServerTCP<ST, CT>::ModbusServerTCP() :
   numClients(0),
   serverTask(nullptr),
   serverPort(502),
-  serverEndTask(false),
   serverTimeout(20000),
   serverEndTask(false)
   {

@@ -219,7 +219,7 @@ void ModbusServerTCP<ST, CT>::serve(ModbusServerTCP<ST, CT> *myself) {
       server.begin();
 
       // Loop until being killed
-      while (!serverEndTask) 
+      while (!myself->serverEndTask) 
       {
         // Do we have clients left to use?
         if (myself->clientAvailable()) {

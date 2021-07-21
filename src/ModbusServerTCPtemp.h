@@ -50,6 +50,7 @@ protected:
   TaskHandle_t serverTask;
   uint16_t serverPort;
   uint32_t serverTimeout;
+  volatile bool serverEndTask;
   mutex clientLock;
 
   struct ClientData {
@@ -86,6 +87,7 @@ ModbusServerTCP<ST, CT>::ModbusServerTCP() :
   numClients(0),
   serverTask(nullptr),
   serverPort(502),
+  serverEndTask(false),
   serverTimeout(20000) {
     clients = new ClientData*[numClients]();
    }
@@ -147,6 +149,7 @@ template <typename ST, typename CT>
     snprintf(taskName, 12, "MBserve%04X", port);
 
     // Start task to handle the client
+    serverEndTask = false;
     xTaskCreatePinnedToCore((TaskFunction_t)&serve, taskName, 4096, this, 5, &serverTask, coreID >= 0 ? coreID : NULL);
     LOG_D("Server task %s started (%d).\n", taskName, (uint32_t)serverTask);
 
@@ -171,7 +174,9 @@ template <typename ST, typename CT>
       }
     }
     if (serverTask != nullptr) {
-      vTaskDelete(serverTask);
+      //signal server task to end itself
+      serverEndTask = true;
+      //vTaskDelete(serverTask);
       LOG_D("Killed server task %d\n", (uint32_t)(serverTask));
       serverTask = nullptr;
     }
@@ -205,28 +210,34 @@ bool ModbusServerTCP<ST, CT>::accept(CT& client, uint32_t timeout, int coreID) {
 
 template <typename ST, typename CT>
 void ModbusServerTCP<ST, CT>::serve(ModbusServerTCP<ST, CT> *myself) {
-  // Set up server with given port
-  ST server(myself->serverPort);
+  
+  {
+      // Set up server with given port
+      ST server(myself->serverPort);
 
-  // Start it
-  server.begin();
+      // Start it
+      server.begin();
 
-  // Loop until being killed
-  while (true) {
-    // Do we have clients left to use?
-    if (myself->clientAvailable()) {
-      // Yes. accept one, when it connects
-      CT ec = server.accept();
-      // Did we get a connection?
-      if (ec) {
-        // Yes. Forward it to the Modbus server
-        myself->accept(ec, myself->serverTimeout, 0);
-        LOG_D("Accepted connection - %d clients running\n", myself->activeClients());
+      // Loop until being killed
+      while (!serverEndTask) 
+      {
+        // Do we have clients left to use?
+        if (myself->clientAvailable()) {
+          // Yes. accept one, when it connects
+          CT ec = server.accept();
+          // Did we get a connection?
+          if (ec) {
+            // Yes. Forward it to the Modbus server
+            myself->accept(ec, myself->serverTimeout, 0);
+            LOG_D("Accepted connection - %d clients running\n", myself->activeClients());
+          }
+        }
+        // Give scheduler room to breathe
+        delay(10);
       }
-    }
-    // Give scheduler room to breathe
-    delay(10);
   }
+  //delete yourself
+  vTaskDelete(NULL);
 }
 
 template <typename ST, typename CT>

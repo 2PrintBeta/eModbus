@@ -146,8 +146,8 @@ template <typename ST, typename CT>
     serverTimeout = timeout;
 
     // Create unique task name
-    char taskName[12];
-    snprintf(taskName, 12, "MBserve%04X", port);
+    char taskName[18];
+    snprintf(taskName, 18, "MBserve%04X", port);
 
     // Start task to handle the client
     serverEndTask = false;
@@ -214,7 +214,7 @@ void ModbusServerTCP<ST, CT>::serve(ModbusServerTCP<ST, CT> *myself) {
   
   {
       // Set up server with given port - no backlog allowed
-      ST server(myself->serverPort,1);
+      ST server(myself->serverPort,32);
 
       // Start it
       server.begin();

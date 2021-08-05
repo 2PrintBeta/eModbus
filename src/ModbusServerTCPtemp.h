@@ -195,8 +195,8 @@ bool ModbusServerTCP<ST, CT>::accept(CT& client, uint32_t timeout, int coreID) {
       clients[i] = new ClientData(0, client, timeout, this);
 
       // Create unique task name
-      char taskName[12];
-      snprintf(taskName, 12, "MBsrv%02Xclnt", i);
+      char taskName[18];
+      snprintf(taskName, 18, "MBsrv%02Xclnt", i);
 
       // Start task to handle the client
       xTaskCreatePinnedToCore((TaskFunction_t)&worker, taskName, 4096, clients[i], 5, &clients[i]->task, coreID >= 0 ? coreID : NULL);
